@@ -57,9 +57,9 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 if (Test-Path $sunshineConfigPath) {
     $backupPath = "$sunshineConfigPath.backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
     Copy-Item $sunshineConfigPath $backupPath
-    Write-Host "✓ Backup created: $backupPath" -ForegroundColor Green
+    Write-Host "[OK] Backup created: $backupPath" -ForegroundColor Green
 } else {
-    Write-Host "! No existing config found - will create new one" -ForegroundColor Yellow
+    Write-Host "[INFO] No existing config found - will create new one" -ForegroundColor Yellow
 }
 
 # Load existing games to check for duplicates
@@ -78,11 +78,11 @@ if (Test-Path $sunshineConfigPath) {
                     $existingGames[$app.cmd.ToLower()] = $true
                 }
             }
-            Write-Host "✓ Found $existingGameCount existing games in Sunshine config`n" -ForegroundColor Cyan
+            Write-Host "[OK] Found $existingGameCount existing games in Sunshine config`n" -ForegroundColor Cyan
         }
     }
     catch {
-        Write-Host "! Warning: Could not parse existing config - $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "[WARN] Could not parse existing config - $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
 
@@ -166,7 +166,7 @@ function Get-SteamGames {
                         $fullGameName = "$gameName (Steam)"
                         
                         if (Test-GameExists -Name $fullGameName -ExePath $exe.FullName) {
-                            Write-Host "  ⊘ Skipped (duplicate): $fullGameName" -ForegroundColor DarkGray
+                            Write-Host "  [SKIP] Duplicate: $fullGameName" -ForegroundColor DarkGray
                             $script:skippedCount++
                             continue
                         }
@@ -180,14 +180,14 @@ function Get-SteamGames {
                             "image-path" = $image
                         }
                         
-                        $imageStatus = if ($image) { "🖼️" } else { "" }
-                        Write-Host "  ✓ Steam: $gameName $imageStatus" -ForegroundColor Cyan
+                        $imageStatus = if ($image) { "[IMG]" } else { "" }
+                        Write-Host "  [OK] Steam: $gameName $imageStatus" -ForegroundColor Cyan
                     }
                 }
             }
         }
         catch {
-            Write-Host "  ! Error processing Steam manifest: $($manifest.Name)" -ForegroundColor Red
+            Write-Host "  [ERROR] Processing Steam manifest: $($manifest.Name)" -ForegroundColor Red
         }
     }
     return $steamGames
@@ -199,11 +199,11 @@ function Get-SteamGames {
 
 foreach ($basePath in $gamePaths) {
     if (-not (Test-Path $basePath)) {
-        Write-Host "⊘ Skipping missing path: $basePath" -ForegroundColor Yellow
+        Write-Host "[SKIP] Missing path: $basePath" -ForegroundColor Yellow
         continue
     }
     
-    Write-Host "`n📁 Scanning: $basePath" -ForegroundColor Magenta
+    Write-Host "`n[SCAN] $basePath" -ForegroundColor Magenta
     
     # Handle Steam libraries
     if ($basePath -like "*SteamLibrary*") {
@@ -223,7 +223,7 @@ foreach ($basePath in $gamePaths) {
                 $gameName = $dir.Name
                 
                 if (Test-GameExists -Name $gameName -ExePath $exe.FullName) {
-                    Write-Host "  ⊘ Skipped (duplicate): $gameName" -ForegroundColor DarkGray
+                    Write-Host "  [SKIP] Duplicate: $gameName" -ForegroundColor DarkGray
                     $skippedCount++
                     continue
                 }
@@ -242,12 +242,12 @@ foreach ($basePath in $gamePaths) {
                     "image-path" = $cleanImage
                 }
                 
-                $imageStatus = if ($image) { "🖼️" } else { "" }
-                Write-Host "  ✓ Found: $gameName $imageStatus" -ForegroundColor Green
+                $imageStatus = if ($image) { "[IMG]" } else { "" }
+                Write-Host "  [OK] Found: $gameName $imageStatus" -ForegroundColor Green
             }
         }
         catch {
-            Write-Host "  ! Error processing: $($dir.Name) - $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "  [ERROR] Processing: $($dir.Name) - $($_.Exception.Message)" -ForegroundColor Red
         }
     }
 }
@@ -257,7 +257,7 @@ foreach ($basePath in $gamePaths) {
 # ============================================================================
 
 if ($games.Count -eq 0) {
-    Write-Host "`n! No new games found to add" -ForegroundColor Yellow
+    Write-Host "`n[INFO] No new games found to add" -ForegroundColor Yellow
     exit
 }
 
@@ -275,10 +275,10 @@ if (Test-Path $sunshineConfigPath) {
 # Save config with UTF-8 encoding to avoid special character issues
 try {
     $config | ConvertTo-Json -Depth 10 | Out-File $sunshineConfigPath -Encoding UTF8 -Force
-    Write-Host "`n✓ Configuration saved successfully" -ForegroundColor Green
+    Write-Host "`n[OK] Configuration saved successfully" -ForegroundColor Green
 }
 catch {
-    Write-Host "`n! Error saving configuration: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "`n[ERROR] Saving configuration: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
 
@@ -290,24 +290,24 @@ $totalCount = $existingGameCount + $games.Count
 # ============================================================================
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "📊 SUMMARY" -ForegroundColor Cyan
+Write-Host "SUMMARY" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "✓ Added: $($games.Count) new games" -ForegroundColor Green
-Write-Host "⊘ Skipped: $skippedCount duplicates" -ForegroundColor Yellow
-Write-Host "📁 Total in Sunshine: $totalCount games" -ForegroundColor Cyan
-Write-Host "💾 Config: $sunshineConfigPath" -ForegroundColor Gray
+Write-Host "[OK] Added: $($games.Count) new games" -ForegroundColor Green
+Write-Host "[SKIP] Skipped: $skippedCount duplicates" -ForegroundColor Yellow
+Write-Host "Total in Sunshine: $totalCount games" -ForegroundColor Cyan
+Write-Host "Config: $sunshineConfigPath" -ForegroundColor Gray
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Count games with images
 $gamesWithImages = ($games | Where-Object { $_."image-path" -ne "" }).Count
 if ($gamesWithImages -gt 0) {
-    Write-Host "🖼️  Found images for $gamesWithImages/$($games.Count) games" -ForegroundColor Magenta
+    Write-Host "[INFO] Found images for $gamesWithImages/$($games.Count) games" -ForegroundColor Magenta
 }
 
-Write-Host "`n⚠️  NEXT STEPS:" -ForegroundColor Yellow
+Write-Host "`nNEXT STEPS:" -ForegroundColor Yellow
 Write-Host "1. Restart Sunshine service (option below)" -ForegroundColor White
 Write-Host "2. In Moonlight: Remove and re-add your host to refresh app list" -ForegroundColor White
-Write-Host "3. Optionally: Add custom cover art (see script comments)" -ForegroundColor White
+Write-Host "3. Optionally: Run downloadImages.ps1 to get cover art" -ForegroundColor White
 
 # ============================================================================
 # SERVICE RESTART
@@ -321,14 +321,14 @@ if ($sunshineService) {
         try {
             Restart-Service -Name "SunshineService" -Force
             Start-Sleep -Seconds 3
-            Write-Host "✓ Sunshine service restarted" -ForegroundColor Green
+            Write-Host "[OK] Sunshine service restarted" -ForegroundColor Green
         }
         catch {
-            Write-Host "! Error restarting service: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "[ERROR] Restarting service: $($_.Exception.Message)" -ForegroundColor Red
         }
     }
 } else {
-    Write-Host "`n! Sunshine service not found - restart manually" -ForegroundColor Yellow
+    Write-Host "`n[WARN] Sunshine service not found - restart manually" -ForegroundColor Yellow
 }
 
 Write-Host "`n========================================`n" -ForegroundColor Cyan
